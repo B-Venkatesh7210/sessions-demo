@@ -14,7 +14,7 @@ import {
 import { contractABI } from "../contract/contractABI";
 import { ethers } from "ethers";
 import { encodeFunctionData } from "viem";
-import { polygonAmoy, sepolia } from "viem/chains";
+import { polygonAmoy, sepolia, berachainTestnetbArtio } from "viem/chains";
 import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
@@ -31,6 +31,20 @@ export default function Home() {
   const chains = [
     {
       chainNo: 0,
+      chainId: 80084,
+      name: "Bera Testnet",
+      providerUrl: "https://bartio.rpc.b-harvest.io",
+      incrementCountContractAdd: "0xcf29227477393728935BdBB86770f8F81b698F1A",
+      biconomyPaymasterApiKey: "9ooHeMdTl.aa829ad6-e07b-4fcb-afc2-584e3400b4f5",
+      explorerUrl: "https://bartio.beratrail.io/tx/",
+      chain: berachainTestnetbArtio,
+      bundlerUrl:
+        "https://bundler.biconomy.io/api/v2/80084/nJPK7B3ru.dd7f7861-190d-41bd-af80-6877f74b8f44",
+      paymasterUrl:
+        "https://paymaster.biconomy.io/api/v1/80084/9ooHeMdTl.aa829ad6-e07b-4fcb-afc2-584e3400b4f5",
+    },
+    {
+      chainNo: 1,
       chainId: 11155111,
       name: "Ethereum Sepolia",
       providerUrl: "https://eth-sepolia.public.blastapi.io",
@@ -44,7 +58,7 @@ export default function Home() {
         "https://paymaster.biconomy.io/api/v1/11155111/gJdVIBMSe.f6cc87ea-e351-449d-9736-c04c6fab56a2",
     },
     {
-      chainNo: 1,
+      chainNo: 2,
       chainId: 80002,
       name: "Polygon Amoy",
       providerUrl: "https://rpc-amoy.polygon.technology/",
@@ -181,21 +195,23 @@ export default function Home() {
 
   const connect = async () => {
     const ethereum = (window as any).ethereum;
-    try{
+    try {
       const provider = new ethers.providers.Web3Provider(ethereum);
       await provider.send("eth_requestAccounts", []);
       const signer = provider.getSigner();
 
       const config = {
         biconomyPaymasterApiKey: chains[chainSelected].biconomyPaymasterApiKey,
-        bundlerUrl: chains[chainSelected].bundlerUrl, 
-      }
+        bundlerUrl: chains[chainSelected].bundlerUrl,
+      };
 
       const bundler = await createBundler({
         bundlerUrl: config.bundlerUrl,
-        userOpReceiptMaxDurationIntervals: {[chains[chainSelected].chainId]: 120000},
-        userOpReceiptIntervals: {[chains[chainSelected].chainId]: 3000},
-      })
+        userOpReceiptMaxDurationIntervals: {
+          [chains[chainSelected].chainId]: 120000,
+        },
+        userOpReceiptIntervals: { [chains[chainSelected].chainId]: 3000 },
+      });
 
       const smartWallet = await createSmartAccountClient({
         signer: signer,
@@ -208,8 +224,7 @@ export default function Home() {
       setSmartAccount(smartWallet);
       const saAddress = await smartWallet.getAddress();
       setSmartAccountAddress(saAddress);
-
-    }catch(e){
+    } catch (e) {
       console.log(e);
     }
   };
