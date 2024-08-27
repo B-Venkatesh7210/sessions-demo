@@ -33,7 +33,7 @@ export default function Home() {
       chainNo: 0,
       chainId: 80084,
       name: "Bera Testnet",
-      providerUrl: "https://bartio.rpc.b-harvest.io",
+      providerUrl: "https://bartio.drpc.org",
       incrementCountContractAdd: "0xcf29227477393728935BdBB86770f8F81b698F1A",
       biconomyPaymasterApiKey: "9ooHeMdTl.aa829ad6-e07b-4fcb-afc2-584e3400b4f5",
       explorerUrl: "https://bartio.beratrail.io/tx/",
@@ -174,23 +174,27 @@ export default function Home() {
   };
 
   const getCountId = async () => {
-    const toastId = toast("Getting Count", { autoClose: false });
-    const contractAddress = chains[chainSelected].incrementCountContractAdd;
-    const provider = new ethers.providers.JsonRpcProvider(
-      chains[chainSelected].providerUrl
-    );
-    const contractInstance = new ethers.Contract(
-      contractAddress,
-      contractABI,
-      provider
-    );
-    const countId = await contractInstance.getCount();
-    setCount(countId.toString());
-    toast.update(toastId, {
-      render: "Successful",
-      type: "success",
-      autoClose: 5000,
-    });
+    try {
+      const toastId = toast("Getting Count", { autoClose: false });
+      const contractAddress = chains[chainSelected].incrementCountContractAdd;
+      const provider = new ethers.providers.JsonRpcProvider(
+        chains[chainSelected].providerUrl
+      );
+      const contractInstance = new ethers.Contract(
+        contractAddress,
+        contractABI,
+        provider
+      );
+      const countId = await contractInstance.getCount();
+      setCount(countId.toString());
+      toast.update(toastId, {
+        render: "Successful",
+        type: "success",
+        autoClose: 5000,
+      });
+    } catch (e) {
+      console.log(e);
+    }
   };
 
   const connect = async () => {
