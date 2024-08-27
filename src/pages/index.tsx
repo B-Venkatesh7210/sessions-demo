@@ -31,20 +31,6 @@ export default function Home() {
   const chains = [
     {
       chainNo: 0,
-      chainId: 80084,
-      name: "Bera Testnet",
-      providerUrl: "https://bartio.rpc.b-harvest.io",
-      incrementCountContractAdd: "0xcf29227477393728935BdBB86770f8F81b698F1A",
-      biconomyPaymasterApiKey: "9ooHeMdTl.aa829ad6-e07b-4fcb-afc2-584e3400b4f5",
-      explorerUrl: "https://bartio.beratrail.io/tx/",
-      chain: berachainTestnetbArtio,
-      bundlerUrl:
-        "https://bundler.biconomy.io/api/v2/80084/nJPK7B3ru.dd7f7861-190d-41bd-af80-6877f74b8f44",
-      paymasterUrl:
-        "https://paymaster.biconomy.io/api/v1/80084/9ooHeMdTl.aa829ad6-e07b-4fcb-afc2-584e3400b4f5",
-    },
-    {
-      chainNo: 1,
       chainId: 11155111,
       name: "Ethereum Sepolia",
       providerUrl: "https://eth-sepolia.public.blastapi.io",
@@ -58,7 +44,7 @@ export default function Home() {
         "https://paymaster.biconomy.io/api/v1/11155111/gJdVIBMSe.f6cc87ea-e351-449d-9736-c04c6fab56a2",
     },
     {
-      chainNo: 2,
+      chainNo: 1,
       chainId: 80002,
       name: "Polygon Amoy",
       providerUrl: "https://rpc-amoy.polygon.technology/",
