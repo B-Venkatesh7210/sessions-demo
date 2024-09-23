@@ -10,13 +10,26 @@ import {
   createSessionSmartAccountClient,
   getSingleSessionTxParams,
   createBundler,
+  getCustomChain,
 } from "@biconomy/account";
 import { contractABI } from "../contract/contractABI";
 import { ethers } from "ethers";
 import { encodeFunctionData } from "viem";
-import { polygonAmoy, sepolia, berachainTestnetbArtio } from "viem/chains";
+import {
+  polygonAmoy,
+  sepolia,
+  berachainTestnetbArtio,
+  seiDevnet,
+  thunderTestnet,
+  bobaSepolia,
+  boba,
+  kakarotSepolia,
+  sei,
+} from "viem/chains";
 import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import { createWalletClient, http } from "viem";
+import { privateKeyToAccount } from "viem/accounts";
 
 export default function Home() {
   const [smartAccount, setSmartAccount] =
@@ -29,20 +42,114 @@ export default function Home() {
   const [txnHash, setTxnHash] = useState<string | null>(null);
 
   const chains = [
+    // {
+    //   chainNo: 0,
+    //   chainId: 11155111,
+    //   name: "Ethereum Sepolia",
+    //   providerUrl: "https://eth-sepolia.public.blastapi.io",
+    //   incrementCountContractAdd: "0xd9ea570eF1378D7B52887cE0342721E164062f5f",
+    //   biconomyPaymasterApiKey: "gJdVIBMSe.f6cc87ea-e351-449d-9736-c04c6fab56a2",
+    //   explorerUrl: "https://sepolia.etherscan.io/tx/",
+    //   chain: sepolia,
+    //   bundlerUrl:
+    //     "https://bundler.biconomy.io/api/v2/11155111/nJPK7B3ru.dd7f7861-190d-41bd-af80-6877f74b8f44",
+    //   paymasterUrl:
+    //     "https://paymaster.biconomy.io/api/v1/11155111/gJdVIBMSe.f6cc87ea-e351-449d-9736-c04c6fab56a2",
+    // },
+    // {
+    //   chainNo: 0,
+    //   chainId: 713715,
+    //   name: "Sei Devnet",
+    //   providerUrl: "https://evm-rpc.arctic-1.seinetwork.io",
+    //   incrementCountContractAdd: "0xCc0F84A93DB93416eb38bBaC27959a0E325E1C87",
+    //   biconomyPaymasterApiKey: "Q0wkKY9iE.0defd30d-e8f3-49cb-a643-b052c0a3d094",
+    //   explorerUrl: "https://seistream.app",
+    //   chain: seiDevnet,
+    //   bundlerUrl: "https://bundler.biconomy.io/api/v2/713715/nJPK7B3ru.dd7f7861-190d-41bd-af80-6877f74b8f44",
+    //   paymasterUrl: "https://paymaster.biconomy.io/api/v1/713715/Q0wkKY9iE.0defd30d-e8f3-49cb-a643-b052c0a3d094",
+    // },
     {
       chainNo: 0,
-      chainId: 11155111,
-      name: "Ethereum Sepolia",
-      providerUrl: "https://eth-sepolia.public.blastapi.io",
-      incrementCountContractAdd: "0xd9ea570eF1378D7B52887cE0342721E164062f5f",
-      biconomyPaymasterApiKey: "gJdVIBMSe.f6cc87ea-e351-449d-9736-c04c6fab56a2",
-      explorerUrl: "https://sepolia.etherscan.io/tx/",
-      chain: sepolia,
+      chainId: 997,
+      name: "5irechain Thunder",
+      providerUrl: "https://rpc.testnet.5ire.network",
+      incrementCountContractAdd: "0xcf29227477393728935BdBB86770f8F81b698F1A",
+      biconomyPaymasterApiKey: "IH8Fsr4dq.5d461485-bb44-4b67-bb59-952bcdeb4d73",
+      explorerUrl: "https://testnet.5irescan.io/",
+      chain: thunderTestnet,
       bundlerUrl:
-        "https://bundler.biconomy.io/api/v2/11155111/nJPK7B3ru.dd7f7861-190d-41bd-af80-6877f74b8f44",
+        "https://bundler.biconomy.io/api/v2/997/nJPK7B3ru.dd7f7861-190d-41bd-af80-6877f74b8f44",
       paymasterUrl:
-        "https://paymaster.biconomy.io/api/v1/11155111/gJdVIBMSe.f6cc87ea-e351-449d-9736-c04c6fab56a2",
+        "https://paymaster.biconomy.io/api/v1/997/IH8Fsr4dq.5d461485-bb44-4b67-bb59-952bcdeb4d73",
     },
+    // {
+    //   chainNo: 0,
+    //   chainId: 995,
+    //   name: "5irechain Mainnet",
+    //   providerUrl: "https://rpc.5ire.network",
+    //   incrementCountContractAdd: "0x006BcC07B3128d72647F49423C4930F8FAb8A6C4",
+    //   biconomyPaymasterApiKey: "Ij8PagQGD.e8bcedfd-1763-4f4f-b6a3-b32bd0576c03",
+    //   explorerUrl: "https://5irescan.io",
+    //   chain: thunderTestnet,
+    //   bundlerUrl: "https://bundler.biconomy.io/api/v2/995/dewj402.wh1289hU-7E49-85b-af80-778ghyuYM",
+    //   paymasterUrl: "https://paymaster.biconomy.io/api/v1/995/Ij8PagQGD.e8bcedfd-1763-4f4f-b6a3-b32bd0576c03",
+    // },
+    // {
+    //   chainNo: 0,
+    //   chainId: 28882,
+    //   name: "Boba Sepolia",
+    //   providerUrl: "https://sepolia.boba.network",
+    //   incrementCountContractAdd: "0xcf29227477393728935BdBB86770f8F81b698F1A",
+    //   biconomyPaymasterApiKey: "c_ZRZbM_B.c0ad33ae-56ea-44a4-a68e-1848565c4093",
+    //   explorerUrl: "https://testnet.bobascan.com",
+    //   chain: bobaSepolia,
+    //   bundlerUrl:
+    //     "https://bundler.biconomy.io/api/v2/28882/nJPK7B3ru.dd7f7861-190d-41bd-af80-6877f74b8f44",
+    //   paymasterUrl:
+    //     "https://paymaster.biconomy.io/api/v1/28882/c_ZRZbM_B.c0ad33ae-56ea-44a4-a68e-1848565c4093",
+    // },
+    // {
+    //   chainNo: 0,
+    //   chainId: 288,
+    //   name: "Boba Mainnet",
+    //   providerUrl: "https://mainnet.boba.network",
+    //   incrementCountContractAdd: "0xcf29227477393728935BdBB86770f8F81b698F1A",
+    //   biconomyPaymasterApiKey: "_LKprEnUb.db6d5dc8-daca-4610-a0cb-224bcc14f4b0",
+    //   explorerUrl: "https://eth.bobascan.com/",
+    //   chain: boba,
+    //   bundlerUrl:
+    //     "https://bundler.biconomy.io/api/v2/288/dewj402.wh1289hU-7E49-85b-af80-778ghyuYM",
+    //   paymasterUrl:
+    //     "https://paymaster.biconomy.io/api/v1/288/_LKprEnUb.db6d5dc8-daca-4610-a0cb-224bcc14f4b0",
+    // },
+     // {
+    //   chainNo: 0,
+    //   chainId: 1802203764,
+    //   name: "Kakorat Sepolia",
+    //   providerUrl: "https://sepolia-rpc-priority.kakarot.org",
+    //   incrementCountContractAdd: "0x006BcC07B3128d72647F49423C4930F8FAb8A6C4",
+    //   biconomyPaymasterApiKey: "R2dBqxHh_.31a6a61d-3bb9-4f5c-ab4d-c3f064115a97",
+    //   explorerUrl: "https://sepolia.kakarotscan.org/",
+    //   chain: kakarotSepolia,
+    //   bundlerUrl:
+    //     "https://bundler.biconomy.io/api/v2/1802203764/nJPK7B3ru.dd7f7861-190d-41bd-af80-6877f74b8f44",
+    //   paymasterUrl:
+    //     "https://paymaster.biconomy.io/api/v1/1802203764/R2dBqxHh_.31a6a61d-3bb9-4f5c-ab4d-c3f064115a97",
+    // },
+    //  {
+    //   chainNo: 0,
+    //   chainId: 1329,
+    //   name: "Sei Mainnet",
+    //   providerUrl: "https://evm-rpc.sei-apis.com/",
+    //   incrementCountContractAdd: "0xcf29227477393728935BdBB86770f8F81b698F1A",
+    //   biconomyPaymasterApiKey: "5qf_XJpWY.b73ac4f9-4438-42b5-a4fc-e2460067c350",
+    //   explorerUrl: "https://seitrace.com",
+    //   chain: sei,
+    //   bundlerUrl:
+    //     "https://bundler.biconomy.io/api/v2/1329/dewj402.wh1289hU-7E49-85b-af80-779ilts88",
+    //   paymasterUrl:
+    //     "https://paymaster.biconomy.io/api/v1/1329/5qf_XJpWY.b73ac4f9-4438-42b5-a4fc-e2460067c350",
+    // },
     {
       chainNo: 1,
       chainId: 80002,
@@ -185,11 +292,47 @@ export default function Home() {
       const provider = new ethers.providers.Web3Provider(ethereum);
       await provider.send("eth_requestAccounts", []);
       const signer = provider.getSigner();
+      // const address = await signer.getAddress();
+      // console.log("Address", address);
+
+      // const customChain = getCustomChain(
+      //   "5irechain Mainnet",
+      //   chains[chainSelected].chainId,
+      //   chains[chainSelected].providerUrl,
+      //   chains[chainSelected].explorerUrl
+      // );
+
+      // const pvtkey =
+      //   "";
+      // const account = privateKeyToAccount(`0x${pvtkey}`);
+
+      // const walletClientWithCustomChain = createWalletClient({
+      //   account,
+      //   chain: customChain,
+      //   transport: http(),
+      // });
+
+      // //@ts-ignore
+      // chains[chainSelected].chain = customChain;
 
       const config = {
         biconomyPaymasterApiKey: chains[chainSelected].biconomyPaymasterApiKey,
         bundlerUrl: chains[chainSelected].bundlerUrl,
       };
+
+      // const smartAccountCustomChain = await createSmartAccountClient({
+      //   signer: walletClientWithCustomChain,
+      //   bundlerUrl: `https://bundler.biconomy.io/api/v2/${chains[chainSelected].chainId}/dewj402.wh1289hU-7E49-85b-af80-778ghyuYM`,
+      //   // bundlerUrl: config.bundlerUrl,
+      //   biconomyPaymasterApiKey: chains[chainSelected].biconomyPaymasterApiKey,
+      //   customChain,
+      // });
+
+      // console.log("Biconomy Smart Account", smartAccountCustomChain);
+      // setSmartAccount(smartAccountCustomChain);
+      // const saAddress = await smartAccountCustomChain.getAccountAddress();
+      // console.log("Smart Account Address", saAddress);
+      // setSmartAccountAddress(saAddress);
 
       const bundler = await createBundler({
         bundlerUrl: config.bundlerUrl,
@@ -207,6 +350,7 @@ export default function Home() {
         chainId: chains[chainSelected].chainId,
       });
 
+      console.log("Smart Account", smartWallet);
       setSmartAccount(smartWallet);
       const saAddress = await smartWallet.getAddress();
       setSmartAccountAddress(saAddress);
@@ -275,7 +419,7 @@ export default function Home() {
                 {txnHash && (
                   <a
                     target="_blank"
-                    href={`${chains[chainSelected].explorerUrl + txnHash}`}
+                    href={`${chains[chainSelected].explorerUrl + '/tx/' + txnHash}`}
                   >
                     <span className="text-white font-bold underline">
                       Txn Hash
