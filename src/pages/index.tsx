@@ -10,13 +10,30 @@ import {
   createSessionSmartAccountClient,
   getSingleSessionTxParams,
   createBundler,
+  getCustomChain,
 } from "@biconomy/account";
 import { contractABI } from "../contract/contractABI";
 import { ethers } from "ethers";
+import { parseEther } from "viem";
 import { encodeFunctionData } from "viem";
-import { polygonAmoy, sepolia, berachainTestnetbArtio } from "viem/chains";
+import {
+  polygonAmoy,
+  sepolia,
+  berachainTestnetbArtio,
+  seiDevnet,
+  thunderTestnet,
+  bobaSepolia,
+  boba,
+  kakarotSepolia,
+  sei,
+  lisk,
+  metalL2,
+  liskSepolia,
+} from "viem/chains";
 import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import { createWalletClient, http } from "viem";
+import { privateKeyToAccount } from "viem/accounts";
 
 export default function Home() {
   const [smartAccount, setSmartAccount] =
@@ -31,17 +48,17 @@ export default function Home() {
   const chains = [
     {
       chainNo: 0,
-      chainId: 11155111,
-      name: "Ethereum Sepolia",
-      providerUrl: "https://eth-sepolia.public.blastapi.io",
-      incrementCountContractAdd: "0xd9ea570eF1378D7B52887cE0342721E164062f5f",
-      biconomyPaymasterApiKey: "gJdVIBMSe.f6cc87ea-e351-449d-9736-c04c6fab56a2",
-      explorerUrl: "https://sepolia.etherscan.io/tx/",
-      chain: sepolia,
+      chainId: 4202,
+      name: "Lisk Sepolia",
+      providerUrl: "https://rpc.sepolia-api.lisk.com",
+      incrementCountContractAdd: "0xcf29227477393728935BdBB86770f8F81b698F1A",
+      biconomyPaymasterApiKey: "l7kF2E-Hc.cd96ec32-6720-4081-8e03-0f6fe4d6988c",
+      explorerUrl: "https://sepolia-blockscout.lisk.com",
+      chain: liskSepolia,
       bundlerUrl:
-        "https://bundler.biconomy.io/api/v2/11155111/nJPK7B3ru.dd7f7861-190d-41bd-af80-6877f74b8f44",
+        "https://bundler.biconomy.io/api/v2/4202/nJPK7B3ru.dd7f7861-190d-41bd-af80-6877f74b8f44",
       paymasterUrl:
-        "https://paymaster.biconomy.io/api/v1/11155111/gJdVIBMSe.f6cc87ea-e351-449d-9736-c04c6fab56a2",
+        "https://paymaster.biconomy.io/api/v1/4202/l7kF2E-Hc.cd96ec32-6720-4081-8e03-0f6fe4d6988c",
     },
     {
       chainNo: 1,
@@ -63,55 +80,73 @@ export default function Home() {
     paymasterServiceData: { mode: PaymasterMode.SPONSORED },
   };
 
-  const createSessionWithSponsorship = async () => {
-    const toastId = toast("Creating Session", { autoClose: false });
+  const recipientAddress = "0xFe858b41C59C99A86a0569CD5e57c29096f619a2"; // Replace with the actual recipient address
+  const amountToTransfer = parseEther("1"); // Amount equal to 1 token
 
-    const { sessionKeyAddress, sessionStorageClient } =
-      await createSessionKeyEOA(
+  const createSessionWithSponsorship = async () => {
+    const toastId = toast("Transferring ERC20 Token", { autoClose: false });
+
+    try {
+      const { sessionKeyAddress, sessionStorageClient } =
+        await createSessionKeyEOA(
+          //@ts-ignore
+          smartAccount,
+          chains[chainSelected].chain
+        );
+
+      const policy: Policy[] = [
+        {
+          sessionKeyAddress,
+          //@ts-ignore
+          contractAddress: "0x006BcC07B3128d72647F49423C4930F8FAb8A6C4", // This should be the ERC20 token contract address
+          functionSelector: "transfer(address,uint256)", // Function to call for transferring tokens
+          rules: [
+            // {
+            //   offset: 0,
+            //   condition: 0,
+            //   referenceValue: "0xFe858b41C59C99A86a0569CD5e57c29096f619a2", //recipient address
+            // },
+            // {
+            //   offset: 1,
+            //   condition: 0,
+            //   referenceValue: 1000000, //amount to transfer
+            // },
+          ],
+          interval: {
+            validUntil: 0,
+            validAfter: 0,
+          },
+          valueLimit: amountToTransfer,
+        },
+      ];
+
+      const { wait, session } = await createSession(
         //@ts-ignore
         smartAccount,
-        chains[chainSelected].chain
+        policy,
+        sessionStorageClient,
+        withSponsorship
       );
 
-    const policy: Policy[] = [
-      {
-        sessionKeyAddress,
-        //@ts-ignore
-        contractAddress: chains[chainSelected].incrementCountContractAdd,
-        functionSelector: "increment()",
-        rules: [],
-        interval: {
-          validUntil: 0,
-          validAfter: 0,
-        },
-        valueLimit: BigInt(0),
-      },
-    ];
+      const {
+        receipt: { transactionHash },
+        success,
+      } = await wait();
 
-    const { wait, session } = await createSession(
-      //@ts-ignore
-      smartAccount,
-      policy,
-      sessionStorageClient,
-      withSponsorship
-    );
+      console.log(success, transactionHash);
 
-    const {
-      receipt: { transactionHash },
-      success,
-    } = await wait();
-
-    console.log(success, transactionHash);
-
-    toast.update(toastId, {
-      render: "Session Creation Successful",
-      type: "success",
-      autoClose: 5000,
-    });
+      toast.update(toastId, {
+        render: "Token Transfer Successful",
+        type: "success",
+        autoClose: 5000,
+      });
+    } catch (e) {
+      console.log(e);
+    }
   };
 
-  const incrementCount = async () => {
-    const toastId = toast("Incrementing Count", { autoClose: false });
+  const transferTokens = async () => {
+    const toastId = toast("Transferring Tokens", { autoClose: false });
 
     const emulatedUsersSmartAccount = await createSessionSmartAccountClient(
       {
@@ -125,11 +160,35 @@ export default function Home() {
     );
 
     const minTx = {
-      to: chains[chainSelected].incrementCountContractAdd,
+      to: "0x006BcC07B3128d72647F49423C4930F8FAb8A6C4", // ERC20 token contract address
       data: encodeFunctionData({
-        abi: contractABI,
-        functionName: "increment",
-        args: [],
+        abi: [
+          {
+            constant: false,
+            inputs: [
+              {
+                name: "recipient",
+                type: "address",
+              },
+              {
+                name: "amount",
+                type: "uint256",
+              },
+            ],
+            name: "transfer",
+            outputs: [
+              {
+                name: "",
+                type: "bool",
+              },
+            ],
+            payable: false,
+            stateMutability: "nonpayable",
+            type: "function",
+          },
+        ],
+        functionName: "transfer",
+        args: [recipientAddress, parseEther("1")],
       }),
     };
 
@@ -153,7 +212,7 @@ export default function Home() {
     setTxnHash(transactionHash);
 
     toast.update(toastId, {
-      render: "Session Creation Successful",
+      render: "Token Transfer Successful",
       type: "success",
       autoClose: 5000,
     });
@@ -185,6 +244,8 @@ export default function Home() {
       const provider = new ethers.providers.Web3Provider(ethereum);
       await provider.send("eth_requestAccounts", []);
       const signer = provider.getSigner();
+      const address = await signer.getAddress();
+      console.log("Address", address);
 
       const config = {
         biconomyPaymasterApiKey: chains[chainSelected].biconomyPaymasterApiKey,
@@ -207,6 +268,7 @@ export default function Home() {
         chainId: chains[chainSelected].chainId,
       });
 
+      console.log("Smart Account", smartWallet);
       setSmartAccount(smartWallet);
       const saAddress = await smartWallet.getAddress();
       setSmartAccountAddress(saAddress);
@@ -267,7 +329,7 @@ export default function Home() {
             <div className="flex flex-col justify-start items-center gap-2">
               <button
                 className="w-[10rem] h-[3rem] bg-orange-300 text-black font-bold rounded-lg"
-                onClick={incrementCount}
+                onClick={transferTokens}
               >
                 Increment Count
               </button>
@@ -275,7 +337,9 @@ export default function Home() {
                 {txnHash && (
                   <a
                     target="_blank"
-                    href={`${chains[chainSelected].explorerUrl + txnHash}`}
+                    href={`${
+                      chains[chainSelected].explorerUrl + "/tx/" + txnHash
+                    }`}
                   >
                     <span className="text-white font-bold underline">
                       Txn Hash
